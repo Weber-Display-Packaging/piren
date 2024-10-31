@@ -1,5 +1,4 @@
 from gpiozero import Device, LED, Button
-from gpiozero.mixins import HoldThread
 from gpiozero.pins.mock import MockFactory
 import sys
 
@@ -14,7 +13,7 @@ class DELAY:
     LONG = lambda : 5
 
 
-door_btn = Button(17, hold_time=DELAY.DEFAULT(), pull_up=False)
+door_btn = Button(17, hold_time=DELAY.DEFAULT(), pull_up=True)
 button_btn = Button(1, pull_up=True)
 unlock_led = LED(16)
 beep_led = LED(23)
