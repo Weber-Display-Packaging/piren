@@ -1,5 +1,6 @@
 from webserver import app
 import threading
+import sys
 from globals import *
 
 # When the door has been left open, activate the siren
@@ -43,28 +44,32 @@ def wiegand_callback(bits, value, raw):
         unlock_door(30)
         print("ran async")
 
-# Keyboard control functions (modified)
-import keyboard
+print(sys.platform)
 
-def key_pressed(key):
-    if key.name in key_map and not key_map[key.name].is_active:
-        print(f'active {key.name}')
-        key_map[key.name].pin.drive_low()
+if sys.platform.startswith("win"):
+    # Keyboard control functions (modified)
+    print("activate keyboard version")
+    import keyboard
 
-def key_released(key):
-    if key.name in key_map:
-        print(f'inactive {key.name}')
-        key_map[key.name].pin.drive_high()
+    def key_pressed(key):
+        if key.name in key_map and not key_map[key.name].is_active:
+            print(f'active {key.name}')
+            key_map[key.name].pin.drive_low()
 
-key_map = {
-    'a': door_btn,
-    'b': button_btn
-}
+    def key_released(key):
+        if key.name in key_map:
+            print(f'inactive {key.name}')
+            key_map[key.name].pin.drive_high()
 
-for key in key_map.keys():
-    keyboard.on_press_key(key, key_pressed)
-    keyboard.on_release_key(key, key_released)
-# End keyboard control
+    key_map = {
+        'a': door_btn,
+        'b': button_btn
+    }
+
+    for key in key_map.keys():
+        keyboard.on_press_key(key, key_pressed)
+        keyboard.on_release_key(key, key_released)
+    # End keyboard control
 
 # Threading for Flask
 def run_flask():
