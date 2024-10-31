@@ -1,6 +1,8 @@
 from webserver import app
 import threading
 import sys
+import wiegand
+import pigpio
 from globals import *
 
 # When the door has been left open, activate the siren
@@ -9,6 +11,9 @@ door_btn.when_held = siren_on
 door_btn.when_deactivated = siren_off
 # When pressing the physical button, disable the siren for DELAY.SHORT
 button_btn.when_activated = lambda a : siren_off(temporary=DELAY.SHORT)
+
+wiegand_white = 9
+wiegand_green = 11
 
 
 def wiegand_callback(bits, value, raw):
@@ -43,6 +48,9 @@ def wiegand_callback(bits, value, raw):
 
         unlock_door(30)
         print("ran async")
+
+pi = pigpio.pi()
+w = wiegand.decoder(pi, wiegand_white, wiegand_green, wiegand_callback)
 
 print(sys.platform)
 
