@@ -1,8 +1,10 @@
 from gpiozero import Device, LED, Button
 from gpiozero.mixins import HoldThread
 from gpiozero.pins.mock import MockFactory
+import sys
 
-Device.pin_factory = MockFactory()
+if sys.platform.startswith("win"):
+    Device.pin_factory = MockFactory()
 
 default_delay = int(open('settings/delay.txt', 'r').read())
 
