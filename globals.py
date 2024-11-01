@@ -6,14 +6,6 @@ import time
 if sys.platform.startswith("win"):
     Device.pin_factory = MockFactory()
 
-class DelaysClass:
-    def __init__(self):
-        self.DEFAULT = int(open('settings/default_delay.txt', 'r').read())
-        self.SHORT = int(open('settings/short_delay.txt', 'r').read())
-        self.LONG = int(open('settings/long_delay.txt', 'r').read())
-
-DELAY = DelaysClass()
-
 door_btn = Button(17, hold_time=DELAY.DEFAULT, pull_up=True) # Board 11
 button_btn = Button(12, pull_up=True) # Board 32
 unlock_led = LED(16) # Board 36
@@ -22,6 +14,14 @@ siren_led = LED(26) # Board 37
 
 wiegand_white = 9 # Board 9
 wiegand_green = 11 # Board 11
+
+class DelaysClass:
+    def __init__(self):
+        self.DEFAULT = int(open('settings/default_delay.txt', 'r').read())
+        self.SHORT = int(open('settings/short_delay.txt', 'r').read())
+        self.LONG = int(open('settings/long_delay.txt', 'r').read())
+
+DELAY = DelaysClass()
 
 class OverridersClass:
     def __init__(self):
