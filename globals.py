@@ -14,14 +14,14 @@ class DelaysClass:
 
 DELAY = DelaysClass()
 
-door_btn = Button(17, hold_time=DELAY.DEFAULT, pull_up=True)
-button_btn = Button(12, pull_up=True)
-unlock_led = LED(16)
-beep_led = LED(23)
-siren_led = LED(26)
+door_btn = Button(17, hold_time=DELAY.DEFAULT, pull_up=True) # Board 11
+button_btn = Button(12, pull_up=True) # Board 32
+unlock_led = LED(16) # Board 36
+beep_led = LED(23) # Board 16
+siren_led = LED(26) # Board 37
 
-wiegand_white = 9
-wiegand_green = 11
+wiegand_white = 9 # Board 9
+wiegand_green = 11 # Board 11
 
 class OverridersClass:
     def __init__(self):
