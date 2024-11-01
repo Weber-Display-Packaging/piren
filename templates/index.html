@@ -4,40 +4,46 @@
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 		<style>
 			body {background-color: silver;}
-			 table {
+			table {
 				border-radius: 10px;
-				 margin: auto;
-				 align: center;
-				 font-family: arial, sans-serif;
-				 border-collapse: collapse;
-				 width: 80%;
-			}
-			 td:not([class=nopad]), th {
-				text-align: left;
-				 padding: 8px;
-				 border: 2px solid black;
-			}
-			
-			 th {background-color: gray;}
-			 tr:nth-child(even) {background-color: #dddddd;}
-			 tr:nth-child(odd) {background-color: white;}
-			 #green {background-color: lime;}
-			 #red {background-color: lightcoral;}
-			 
-			 .nopad {
-				padding:0px;
-				 margin: 0px;
-				 border: 2px solid black;
-			}
-			 input {
-				width: 100%;
-				 height: 100%;
-				 margin: 0px;
-			}
-			 button {
+				margin: auto;
 				align: center;
-				 padding: 8px;
-				 outline: none;
+				font-family: arial, sans-serif;
+				border-collapse: collapse;
+				width: 80%;
+			}
+			td:not([class=nopad]), th {
+				text-align: left;
+				padding: 8px;
+				border: 2px solid black;
+			}
+
+			th {background-color: gray;}
+			tr:nth-child(even) {background-color: #dddddd;}
+			tr:nth-child(odd) {background-color: white;}
+			#green {background-color: lime;}
+			#red {background-color: lightcoral;}
+			 
+			.nopad {
+				padding:0px;
+				margin: 0px;
+				border: 2px solid black;
+			}
+			input {
+				width: 100%;
+				height: 100%;
+				margin: 0px;
+			}
+			button {
+				align: center;
+				padding: 8px;
+				outline: none;
+				cursor: pointer;
+				border-radius: 10px;
+				transition: opacity 0.1s ease;
+			}
+			button:not(:hover) {
+				opacity: 75%;
 			}
 			textarea {
 				width: 100%;
@@ -65,19 +71,24 @@
 		<br>
 		<br>
 		<div style='margin-left:60%;display: inline-block;'>
+			<button style='background-color:aqua;font-weight:bold;' onclick="send_form();">Update</button>
 			<button style='background-color:coral;font-weight:bold;' onclick="send_unlock();">Remote Door Unlock</button>
 			<button style='background-color:coral;font-weight:bold;' onclick="send_override();">Remote Siren Override</button>
 		</div>
 
 		<script> 
-			var oldseconds;
+			var old_default_delay;
+			var old_short_delay;
+			var old_long_delay;
 			var short_overriders;
+			var long_overriders;
 			var change = false;
-			setInterval(function(){test();}, 250); var timer = 0; function test() {
-				$.get("status", function(data, status){ data = JSON.parse(data); d = new Date(); $("#status").html("<tr><th>Item</th><th>Status (updated at " + d.toLocaleTimeString() 
-					+ ")</th></tr>");
+			var refresh_delay = 500;
+			setInterval(function(){test();}, refresh_delay); var timer = 0; function test() {
+				$.get("status", function(data, status){ data = JSON.parse(data); d = new Date(); $("#status").html("<tr><th>Item</th><th>Status (updated at " + d.toLocaleTimeString()
+					+ ", every " + refresh_delay + "ms)</th></tr>");
 					// Door Status
-					var door_status = ""; if (data["door"]) { door_status = " id='red'>Open</td></tr>";
+					var door_status = ""; if (data["door"]) { door_status = " id='red'>Open (" + data["door_time"] + ")</td></tr>";
 					} else {
 						door_status = " id='green'>Closed</td></tr>";
 					}
@@ -87,19 +98,19 @@
 					} else {
 						post_status = ">Not Pressed</td></tr>";
 					}
-					
+
 					// Siren Status
-					var siren_status = ""; if (data["siren"]) { siren_status = " id='red' class='siren'>Sounding!</td></tr>";
+					var siren_status = ""; if (data["siren"]) { siren_status = " id='red' class='siren'>Sounding! (" + data["siren_time"] + ")</td></tr>";
 					} else {
-						siren_status = " id='green'>Off</td></tr>";
+						siren_status = " id='green'>Off (" + data["siren_time"] + ")</td></tr>";
 					}
 					$("#status").append("<tr><td>Siren Status</td><td" + siren_status);
 					// Time
-					$("#status").append("<tr><td>Time To/Of Siren</td><td style='background-color: orange;'>" + data["time"] + "</td></tr>");
+					//$("#status").append("<tr><td>Time To/Of Siren</td><td style='background-color: orange;'>" + data["time"] + "</td></tr>");
 					// Override Time
-					$("#status").append("<tr><td>Time Until Unoverride</td><td style='background-color: orange;'>" + data["otime"] + "</td></tr>");
+					//$("#status").append("<tr><td>Time Until Unoverride</td><td style='background-color: orange;'>" + data["otime"] + "</td></tr>");
 					// Postpone Button
-					$("#status").append("<tr><td>Postpone Button Status</td><td" + post_status);
+					$("#status").append("<tr><td>Short Override Button</td><td" + post_status);
 
 					// Door Lock Status
 					var door_lock_status = ""; if (!data["door_lock"]) { door_lock_status = " id='green'>Locked</td></tr>";
@@ -109,29 +120,31 @@
 					$("#status").append("<tr><td>Door Lock State</td><td" + door_lock_status);
 
 					// Priveleged Override
-					var override_status = ""; if (data["overridden"]) { override_status = " id='green'>Overridden since " + data["override_time"] + "</td></tr>";
-					} else {
-						override_status = ">N/A</td></tr>";
-					}
-					$("#status").append("<tr><td>Siren Override Status</td><td" + override_status);
+					// var override_status = ""; if (data["overridden"]) { override_status = " id='green'>Overridden since " + data["override_time"] + "</td></tr>";
+					// } else {
+					// 	override_status = ">N/A</td></tr>";
+					// }
+					// $("#status").append("<tr><td>Siren Override Status</td><td" + override_status);
 					$("#status").append("<tr><td>CPU Temperature</td><td>" + data["temperature"] + "&deg;C</td></tr>");
-					
+
 					// Seconds
-					if (data["delay"] != oldseconds || data["short_overriders"].join() != short_overriders.join()) {
-						$("#change").html("<tr><th>Settings</th><th>Value</th></tr>");
-						$("#change").append("<tr><td>Delay (Seconds)</td><td><input id='delay' type='number' min='0' max='86400' value=" + data["delay"] + "></input></td></tr>");
-						$("#change").append("<tr><td>1hr, One Time Overriders (commas)</td><td><textarea id='short_overriders' type='text'>" + data["short_overriders"] + "</textarea></td></tr>");
-						$("#change").append("<tr><td>4hr, Unlimited Overriders (commas)</td><td><textarea id='long_overriders' type='text'>" + data["long_overriders"] + "</textarea></td></tr>");
-						$("#change").append("<tr><td>Door Unlockers</td><td>All of the above</td></tr>");
-						
-						oldseconds = data["delay"];
+					if (data["default_delay"] != old_default_delay || data["short_delay"] != old_short_delay || data["long_delay"] != old_long_delay || data["short_overriders"].join() != short_overriders.join() || data["long_overriders"].join() != long_overriders.join()) {
+						old_default_delay = data["default_delay"];
+						old_short_delay = data["short_delay"];
+						old_long_delay = data["long_delay"];
 						short_overriders = data["short_overriders"];
 						long_overriders = data["long_overriders"];
-					
-						$("#change").append("<button onclick='send_form();'>Update</button>");
+
+						$("#change").html("<tr><th>Settings</th><th>Value</th></tr>");
+						$("#change").append("<tr><td>First Open Delay (Seconds)</td><td><input id='default_delay' type='number' min='0' max='86400' value=" + data["default_delay"] + "></input></td></tr>");
+						$("#change").append("<tr><td>Short Overriders Delay (Seconds)</td><td><input id='short_delay' type='number' min='0' max='86400' value=" + data["short_delay"] + "></input></td></tr>");
+						$("#change").append("<tr><td>Long Overriders Delay (Seconds)</td><td><input id='long_delay' type='number' min='0' max='86400' value=" + data["long_delay"] + "></input></td></tr>");
+						$("#change").append("<tr><td>Short Overriders (commas)</td><td><textarea id='short_overriders' type='text'>" + data["short_overriders"] + "</textarea></td></tr>");
+						$("#change").append("<tr><td>Long Overriders (commas)</td><td><textarea id='long_overriders' type='text'>" + data["long_overriders"] + "</textarea></td></tr>");
+						$("#change").append("<tr><td>Door Unlockers</td><td>All of the above</td></tr>");
 					}
 				})
-				
+
 				var text = document.getElementById('short_overriders');
 				text.style.height = 'auto';
 				text.style.height = text.scrollHeight+5+'px';
@@ -141,7 +154,7 @@
 			}
 			
 			function send_form() {
-				$.post("update", {delay: $("#delay").val(), short_overriders: $("#short_overriders").val(), long_overriders: $("#long_overriders").val(), password: prompt("password:")}, function(data, status){alert("Data: " + data + "\nCommunication: " + status);});
+				$.post("update", {default_delay: $("#default_delay").val(), short_delay: $("#short_delay").val(), long_delay: $("#long_delay").val(), short_overriders: $("#short_overriders").val(), long_overriders: $("#long_overriders").val(), password: prompt("password:")}, function(data, status){alert("Data: " + data + "\nCommunication: " + status);});
 			}
 			
 			function send_unlock() {
@@ -149,7 +162,7 @@
 			}
 
 			function send_override() {
-				$.post("override", {override: true, password: prompt("This will override the Piren until closed.\npassword:")}, function(data, status){alert("Data: " + data + "\nCommunication: " + status);});
+				$.post("override", {override: true, password: prompt("This will override the Piren the same as a long overrider.\npassword:")}, function(data, status){alert("Data: " + data + "\nCommunication: " + status);});
 			}
 		</script>
 	</body>

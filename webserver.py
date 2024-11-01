@@ -20,14 +20,6 @@ def sendlog():
 
 @app.route('/status', methods=['GET'])
 def status():
-	# oldtime = shared['oldtime']
-	# overridden = shared['overridden']
-	# override_time = time.strftime("%x %X", time.localtime(shared['override_time']))
-	# time_to_siren = time.strftime("%H:%M:%S", time.gmtime(abs(shared['seconds'] - (time.time() - oldtime))))
-	# if shared['overridden']:
-	# 	time_to_unoverride = time.strftime("%H:%M:%S", time.gmtime(abs(shared['delay'] - (time.time() - shared['override_time']))))
-	# else:
-	# 	time_to_unoverride = "00:00:00"
 	temperature = 0
 	try:
 		with open('/sys/class/thermal/thermal_zone0/temp') as f:
@@ -40,13 +32,13 @@ def status():
 		"door_lock": unlock_led.is_active,
 		"siren": siren_led.is_active,
 		"button": button_btn.is_active,
-		"overridden": 0,
-		"override_time": 0,
-		"short_overriders": short_overriders,
-		"long_overriders": long_overriders,
-		"time": 0,
-		"otime": 0,
-		"delay": DELAY.DEFAULT(),
+		"short_overriders": OVERRIDERS.SHORT,
+		"long_overriders": OVERRIDERS.LONG,
+		"siren_time": TIMES.SIREN(),
+		"door_time": TIMES.DOOR(),
+		"default_delay": DELAY.DEFAULT,
+		"short_delay": DELAY.SHORT,
+		"long_delay": DELAY.LONG,
 		"temperature": temperature
 	}
 
@@ -55,23 +47,33 @@ def status():
 
 @app.route('/update', methods=["POST"])
 def update():
-	global default_delay, short_overriders, long_overriders
+	import globals
 
 	if request.form["password"] != "password":
 		return "incorrect password"
-	if request.form["delay"].isnumeric() or request.form["short_overriders"] or request.form['long_overriders']:
-		default_delay = int(request.form['delay'])
-		door_btn.hold_time = default_delay
-		with open("./settings/delay.txt", "w") as f:
-			f.write(str(request.form['delay']))
+	if request.form["default_delay"].isnumeric() or request.form["short_delay"].isnumeric() or request.form["long_delay"].isnumeric() or request.form["short_overriders"] or request.form['long_overriders']:
+		globals.DELAY.DEFAULT = int(request.form['default_delay'])
+		door_btn.hold_time = globals.DELAY.DEFAULT
+		with open("settings/default_delay.txt", "w") as f:
+			f.write(str(request.form['default_delay']))
 			f.close()
 
-		short_overriders = [x.strip() for x in request.form['short_overriders'].split(",")]
+		globals.DELAY.SHORT = int(request.form['short_delay'])
+		with open("settings/short_delay.txt", "w") as f:
+			f.write(str(request.form['short_delay']))
+			f.close()
+
+		globals.DELAY.LONG = int(request.form['long_delay'])
+		with open("settings/long_delay.txt", "w") as f:
+			f.write(str(request.form['long_delay']))
+			f.close()
+
+		globals.OVERRIDERS.SHORT = [x.strip() for x in request.form['short_overriders'].split(",")]
 		with open("./settings/short_overriders.txt", "w") as f:
 			f.write(str(request.form['short_overriders']))
 			f.close()
 
-		long_overriders = [x.strip() for x in request.form['long_overriders'].split(",")]
+		globals.OVERRIDERS.LONG = [x.strip() for x in request.form['long_overriders'].split(",")]
 		with open("./settings/long_overriders.txt", "w") as f:
 			f.write(str(request.form['long_overriders']))
 			f.close()
